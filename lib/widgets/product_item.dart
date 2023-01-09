@@ -7,14 +7,14 @@ import 'package:shop_app/screens/product_detail_screen.dart';
 class ProductItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final product = Provider.of<Product>(context,listen: false);
-    final cart = Provider.of<Cart>(context,listen: false);
+    final product = Provider.of<Product>(context, listen: false);
+    final cart = Provider.of<Cart>(context, listen: false);
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: GridTile(
         footer: GridTileBar(
           backgroundColor: Colors.black87,
-          leading: Consumer<Product>(            
+          leading: Consumer<Product>(
             builder: (context, value, _) {
               return IconButton(
                 onPressed: () {
@@ -28,13 +28,24 @@ class ProductItem extends StatelessWidget {
             },
           ),
           trailing: IconButton(
-              onPressed: () {
-                cart.addItem(product.id, product.price, product.title);
-              },
-              icon: Icon(
-                Icons.shopping_cart,
-                color: Theme.of(context).secondaryHeaderColor,
-              )),
+            onPressed: () {
+              cart.addItem(product.id, product.price, product.title);
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Your transfer added successfully'),
+                  duration: const Duration(seconds: 2),
+                  action: SnackBarAction(label: 'UNDO',onPressed: () {
+                    cart.singleItemRemove(product.id);
+                  },),
+                ),
+              );
+            },
+            icon: Icon(
+              Icons.shopping_cart,
+              color: Theme.of(context).secondaryHeaderColor,
+            ),
+          ),
           title: Text(
             product.title,
             textAlign: TextAlign.center,
