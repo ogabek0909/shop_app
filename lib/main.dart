@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shop_app/screens/edit_product_screen.dart';
+import 'package:shop_app/providers/auth.dart';
+import './screens/auth_screen.dart';
+import './screens/edit_product_screen.dart';
 import './providers/cart.dart';
 import './providers/orders.dart';
 import './screens/cart_screen.dart';
@@ -22,31 +24,41 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (ctx) => Products(),
+          create: (context) => Auth(),
+        ),
+        ChangeNotifierProxyProvider<Auth, Products>(
+          update: (context, auth, previous) => Products(auth.token,auth.userId),
+          create: (ctx) => Products('',''),          
         ),
         ChangeNotifierProvider(
           create: (ctx) => Cart(),
         ),
-        ChangeNotifierProvider(
-          create: (ctx) => Order(),
+        ChangeNotifierProxyProvider<Auth, Order>(
+          update: (context, value, previous) => Order(value.token,value.userId),
+          create: (ctx) => Order('',''),
         )
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'My Shop',
-        theme: ThemeData(
-          primarySwatch: Colors.purple,
-          secondaryHeaderColor: Colors.deepOrange,
-          //fontFamily: 'Loto',
+      child: Consumer<Auth>(
+        builder: (ctx, auth, _) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'My Shop',
+          theme: ThemeData(
+            primarySwatch: Colors.purple,
+            secondaryHeaderColor: Colors.deepOrange,
+            //fontFamily: 'Loto',
+          ),
+          home: auth.isAuth ? ProductsOverviewScreen() : FutureBuilder(
+            future: auth.tryAutoLogin(),
+            builder: (context, snapshot) => snapshot.connectionState == ConnectionState.waiting ? Center(child: CircularProgressIndicator(),) : AuthScreen()) ,
+          routes: {
+            ProductDetailScreen.routeName: (context) => ProductDetailScreen(),
+            CartScreen.routeName: (context) => CartScreen(),
+            OrdersScreen.routeName: (context) => OrdersScreen(),
+            UserProductsScreen.routeName: (context) => UserProductsScreen(),
+            EditProductScreen.routeName: (context) => const EditProductScreen()
+          },
         ),
-        home: ProductsOverviewScreen(),
-        routes: {
-          ProductDetailScreen.routeName: (context) => ProductDetailScreen(),
-          CartScreen.routeName: (context) => CartScreen(),
-          OrdersScreen.routeName:(context) => OrdersScreen(),
-          UserProductsScreen.routeName:(context) => UserProductsScreen(),
-          EditProductScreen.routeName:(context) => EditProductScreen()
-        },
+      
       ),
     );
   }

@@ -8,13 +8,15 @@ import 'package:shop_app/widgets/user_product_item.dart';
 class UserProductsScreen extends StatelessWidget {
   static const routeName = '/UserProductScreen';
 
-  Future<void> fetchProducts(BuildContext context)async{
-    await Provider.of<Products>(context,listen: false).fetchAndSetProducts();
+  Future<void> fetchProducts(BuildContext context) async {
+    await Provider.of<Products>(context, listen: false)
+        .fetchAndSetProducts(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final productsData = Provider.of<Products>(context);
+    print('object');
+    // final productsData = Provider.of<Products>(context);
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
@@ -28,24 +30,32 @@ class UserProductsScreen extends StatelessWidget {
           )
         ],
       ),
-      body: RefreshIndicator(
-        
-        onRefresh: () => fetchProducts(context),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ListView.builder(
-            itemCount: productsData.item.length,
-            itemBuilder: (context, index) {
-              // return ListTile(title: Text('fdsafda'),);
-              return UserProductItem(
-                id: productsData.item[index].id,
-                imageUrl: productsData.item[index].imageUrl,
-                title: productsData.item[index].title,
-              );
-      
-            },
-          ),
-        ),
+      body: FutureBuilder(
+        future: fetchProducts(context),
+        builder: (context, snapshot) =>
+            snapshot.connectionState == ConnectionState.waiting
+                ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () => fetchProducts(context),
+                    child: Consumer<Products>(
+                      builder:(context, productsData, _) =>  Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: ListView.builder(
+                          itemCount: productsData.item.length,
+                          itemBuilder: (context, index) {
+                            // return ListTile(title: Text('fdsafda'),);
+                            return UserProductItem(
+                              id: productsData.item[index].id,
+                              imageUrl: productsData.item[index].imageUrl,
+                              title: productsData.item[index].title,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -42,6 +41,10 @@ class Products with ChangeNotifier {
     // ),
   ];
 
+  final String token;
+  final String userId;
+  Products(this.token,this.userId);
+
   List<Product> get item {
     return [..._items].toList();
   }
@@ -56,14 +59,24 @@ class Products with ChangeNotifier {
     );
   }
 
-  Future<void> fetchAndSetProducts() async {
+  Future<void> fetchAndSetProducts([bool filterUserBy = false]) async {
+    final filterString = filterUserBy ? 'orderBy="creatorId"&equalTo="$userId"' : ''; 
     Uri url = Uri.parse(
-      'https://flutter-chat-3900f-default-rtdb.firebaseio.com/products.json',
+      'https://flutter-chat-3900f-default-rtdb.firebaseio.com/products.json?auth=$token&$filterString',
     );
     try {
       final http.Response response = await http.get(url);
       // print(jsonDecode(response.body));
       final extractedData = jsonDecode(response.body) as Map<String, dynamic>;
+      if(jsonDecode(response.body)==null){
+        return;
+      }
+       url = Uri.parse(
+      'https://flutter-chat-3900f-default-rtdb.firebaseio.com/userFavorite/$userId.json?auth=$token',
+    );
+    final favoriteResponse = await http.get(url);
+    final favoriteData = jsonDecode(favoriteResponse.body);
+
       List<Product> loadedProducts = [];
       extractedData.forEach((key, value) {
         loadedProducts.add(
@@ -73,7 +86,7 @@ class Products with ChangeNotifier {
             description: value['description'],
             price: value['price'],
             imageUrl: value['imageUrl'],
-            isFavorite: value['isFavorite'],
+            isFavorite: favoriteData==null ? false : favoriteData[key] ?? false,
           ),
         );
       });
@@ -87,7 +100,7 @@ class Products with ChangeNotifier {
 
   Future<void> addProduct(Product product) async {
     Uri url = Uri.parse(
-      'https://flutter-chat-3900f-default-rtdb.firebaseio.com/products.json',
+      'https://flutter-chat-3900f-default-rtdb.firebaseio.com/products.json?auth=$token',
     );
     try {
       final response = await http.post(url,
@@ -97,7 +110,7 @@ class Products with ChangeNotifier {
             'imageUrl': product.imageUrl,
             'id': product.id,
             'description': product.description,
-            'isFavorite': product.isFavorite
+            'creatorId':userId
           }));
 
       _items.add(
@@ -120,7 +133,7 @@ class Products with ChangeNotifier {
     final prodIndex = _items.indexWhere((element) => element.id == id);
     if (prodIndex >= 0) {
       Uri url = Uri.parse(
-        'https://flutter-chat-3900f-default-rtdb.firebaseio.com/products/$id.json',
+        'https://flutter-chat-3900f-default-rtdb.firebaseio.com/products/$id.json?auth=$token',
       );
       await http.patch(url,
           body: jsonEncode({
@@ -139,7 +152,7 @@ class Products with ChangeNotifier {
         _items.indexWhere((element) => element.id == id);
     var existingProduct = _items[existingProductIndex];
     Uri url = Uri.parse(
-      'https://flutter-chat-3900f-default-rtdb.firebaseio.com/products/$id.json',
+      'https://flutter-chat-3900f-default-rtdb.firebaseio.com/products/$id.json?auth=$token',
     );
     _items.removeAt(existingProductIndex);
     notifyListeners();
